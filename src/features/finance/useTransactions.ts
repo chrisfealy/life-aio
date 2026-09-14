@@ -5,10 +5,10 @@ import type { Database, TransactionDirection } from '../../types/database.types'
 
 export type TransactionInsert = Database['public']['Tables']['transactions']['Insert']
 
-export function useTransactions(options?: { startDate?: string; endDate?: string; limit?: number }) {
+export function useTransactions(options?: { startDate?: string; endDate?: string; limit?: number; accountId?: string }) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
-  const queryKey = ['transactions', user?.id, options?.startDate, options?.endDate, options?.limit]
+  const queryKey = ['transactions', user?.id, options?.startDate, options?.endDate, options?.limit, options?.accountId]
 
   const query = useQuery({
     queryKey,
@@ -16,11 +16,12 @@ export function useTransactions(options?: { startDate?: string; endDate?: string
     queryFn: async () => {
       let q = supabase
         .from('transactions')
-        .select('*, category:finance_categories(name, color)')
+        .select('*, category:finance_categories(name, color), account:finance_accounts(name)')
         .order('txn_date', { ascending: false })
         .order('created_at', { ascending: false })
       if (options?.startDate) q = q.gte('txn_date', options.startDate)
       if (options?.endDate) q = q.lte('txn_date', options.endDate)
+      if (options?.accountId) q = q.eq('account_id', options.accountId)
       if (options?.limit) q = q.limit(options.limit)
       const { data, error } = await q
       if (error) throw error
@@ -28,12 +29,21 @@ export function useTransactions(options?: { startDate?: string; endDate?: string
     },
   })
 
+  function invalidateAll() {
+    queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] })
+    // Journal's per-day rollup and each account's balance are separate cached queries —
+    // invalidate them too so changes show up immediately instead of waiting out staleTime.
+    queryClient.invalidateQueries({ queryKey: ['day_rollup_transactions', user?.id] })
+    queryClient.invalidateQueries({ queryKey: ['finance_account_balances', user?.id] })
+  }
+
   const create = useMutation({
     mutationFn: async (input: {
       txnDate: string
       amount: number
       direction: TransactionDirection
       categoryId?: string | null
+      accountId?: string | null
       note?: string | null
     }) => {
       if (!user) throw new Error('Not signed in')
@@ -43,17 +53,13 @@ export function useTransactions(options?: { startDate?: string; endDate?: string
         amount: input.amount,
         direction: input.direction,
         category_id: input.categoryId ?? null,
+        account_id: input.accountId ?? null,
         note: input.note ?? null,
         source: 'manual',
       })
       if (error) throw error
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] })
-      // Journal's per-day rollup is a separate cached query — invalidate it too so changes
-      // show up there immediately instead of waiting out its staleTime.
-      queryClient.invalidateQueries({ queryKey: ['day_rollup_transactions', user?.id] })
-    },
+    onSuccess: invalidateAll,
   })
 
   const update = useMutation({
@@ -63,6 +69,7 @@ export function useTransactions(options?: { startDate?: string; endDate?: string
       amount: number
       direction: TransactionDirection
       categoryId?: string | null
+      accountId?: string | null
       note?: string | null
     }) => {
       const { error } = await supabase
@@ -72,17 +79,13 @@ export function useTransactions(options?: { startDate?: string; endDate?: string
           amount: input.amount,
           direction: input.direction,
           category_id: input.categoryId ?? null,
+          account_id: input.accountId ?? null,
           note: input.note ?? null,
         })
         .eq('id', input.id)
       if (error) throw error
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] })
-      // Journal's per-day rollup is a separate cached query — invalidate it too so changes
-      // show up there immediately instead of waiting out its staleTime.
-      queryClient.invalidateQueries({ queryKey: ['day_rollup_transactions', user?.id] })
-    },
+    onSuccess: invalidateAll,
   })
 
   const remove = useMutation({
@@ -90,16 +93,15 @@ export function useTransactions(options?: { startDate?: string; endDate?: string
       const { error } = await supabase.from('transactions').delete().eq('id', transactionId)
       if (error) throw error
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] })
-      // Journal's per-day rollup is a separate cached query — invalidate it too so changes
-      // show up there immediately instead of waiting out its staleTime.
-      queryClient.invalidateQueries({ queryKey: ['day_rollup_transactions', user?.id] })
-    },
+    onSuccess: invalidateAll,
   })
 
   const importBatch = useMutation({
-    mutationFn: async (input: { filename: string; rows: Omit<TransactionInsert, 'user_id' | 'source' | 'import_batch_id'>[] }) => {
+    mutationFn: async (input: {
+      filename: string
+      accountId?: string | null
+      rows: Omit<TransactionInsert, 'user_id' | 'source' | 'import_batch_id' | 'account_id'>[]
+    }) => {
       if (!user) throw new Error('Not signed in')
       const { data: batch, error: batchError } = await supabase
         .from('csv_import_batches')
@@ -113,17 +115,13 @@ export function useTransactions(options?: { startDate?: string; endDate?: string
         user_id: user.id,
         source: 'csv_import',
         import_batch_id: batch.id,
+        account_id: input.accountId ?? null,
       }))
       const { error: insertError } = await supabase.from('transactions').insert(rows)
       if (insertError) throw insertError
       return batch
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] })
-      // Journal's per-day rollup is a separate cached query — invalidate it too so changes
-      // show up there immediately instead of waiting out its staleTime.
-      queryClient.invalidateQueries({ queryKey: ['day_rollup_transactions', user?.id] })
-    },
+    onSuccess: invalidateAll,
   })
 
   return { ...query, create, update, remove, importBatch }

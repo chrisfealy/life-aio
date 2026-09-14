@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AccountsManager } from './AccountsManager'
 import { CategoryManager } from './CategoryManager'
 import { CsvImportWizard } from './csv-import/CsvImportWizard'
 import { TransactionForm } from './TransactionForm'
@@ -22,6 +23,7 @@ export function FinancePage() {
         </button>
       </div>
 
+      <AccountsManager />
       <TransactionForm />
       <CategoryManager />
 

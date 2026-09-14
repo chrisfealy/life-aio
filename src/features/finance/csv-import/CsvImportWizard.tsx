@@ -2,6 +2,7 @@ import { parse as parseDate, isValid } from 'date-fns'
 import Papa from 'papaparse'
 import { useMemo, useState } from 'react'
 import { format } from 'date-fns'
+import { useAccounts } from '../useAccounts'
 import { useCategories, useCategoryRules, suggestCategoryId } from '../useCategories'
 import { useTransactions, type TransactionInsert } from '../useTransactions'
 
@@ -32,10 +33,12 @@ export function CsvImportWizard({ onClose }: { onClose: () => void }) {
   const [amountCol, setAmountCol] = useState('')
   const [debitCol, setDebitCol] = useState('')
   const [creditCol, setCreditCol] = useState('')
+  const [accountId, setAccountId] = useState('')
 
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([])
 
   const { data: categories } = useCategories()
+  const { data: accounts } = useAccounts()
   const { data: rules } = useCategoryRules()
   const { data: existingTransactions } = useTransactions({ limit: 500 })
   const { importBatch } = useTransactions()
@@ -108,7 +111,7 @@ export function CsvImportWizard({ onClose }: { onClose: () => void }) {
   const includedCount = useMemo(() => parsedRows.filter((r) => r.include).length, [parsedRows])
 
   async function handleConfirm() {
-    const rows: Omit<TransactionInsert, 'user_id' | 'source' | 'import_batch_id'>[] = parsedRows
+    const rows: Omit<TransactionInsert, 'user_id' | 'source' | 'import_batch_id' | 'account_id'>[] = parsedRows
       .filter((r) => r.include && r.date && r.amount)
       .map((r) => ({
         txn_date: r.date as string,
@@ -120,7 +123,7 @@ export function CsvImportWizard({ onClose }: { onClose: () => void }) {
       }))
 
     if (rows.length === 0) return
-    await importBatch.mutateAsync({ filename, rows })
+    await importBatch.mutateAsync({ filename, accountId: accountId || null, rows })
     onClose()
   }
 
@@ -173,6 +176,20 @@ export function CsvImportWizard({ onClose }: { onClose: () => void }) {
               </Field>
               <Field label="Description column">
                 <Select value={descCol} onChange={setDescCol} options={headers} />
+              </Field>
+              <Field label="Account">
+                <select
+                  value={accountId}
+                  onChange={(e) => setAccountId(e.target.value)}
+                  className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                >
+                  <option value="">No account</option>
+                  {(accounts ?? []).map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
               </Field>
             </div>
 

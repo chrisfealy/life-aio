@@ -8,6 +8,7 @@ export type WorkoutType = 'strength' | 'cardio'
 export type CategoryDirection = 'income' | 'expense' | 'both'
 export type TransactionDirection = 'in' | 'out'
 export type TransactionSource = 'manual' | 'csv_import'
+export type AccountType = 'checking' | 'savings' | 'credit_card' | 'investment' | 'other'
 
 export interface Database {
   public: {
@@ -301,6 +302,30 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['finance_categories']['Insert']>
         Relationships: []
       }
+      finance_accounts: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          account_type: AccountType
+          starting_balance: number
+          is_archived: boolean
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          name: string
+          account_type?: AccountType
+          starting_balance?: number
+          is_archived?: boolean
+          sort_order?: number
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['finance_accounts']['Insert']>
+        Relationships: []
+      }
       csv_import_batches: {
         Row: {
           id: string
@@ -331,6 +356,7 @@ export interface Database {
           raw_description: string | null
           source: TransactionSource
           import_batch_id: string | null
+          account_id: string | null
           created_at: string
         }
         Insert: {
@@ -344,6 +370,7 @@ export interface Database {
           raw_description?: string | null
           source?: TransactionSource
           import_batch_id?: string | null
+          account_id?: string | null
           created_at?: string
         }
         Update: Partial<Database['public']['Tables']['transactions']['Insert']>
@@ -358,6 +385,12 @@ export interface Database {
             foreignKeyName: 'transactions_import_batch_id_fkey'
             columns: ['import_batch_id']
             referencedRelation: 'csv_import_batches'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transactions_account_id_fkey'
+            columns: ['account_id']
+            referencedRelation: 'finance_accounts'
             referencedColumns: ['id']
           },
         ]
