@@ -42,6 +42,28 @@ export function useHabits(includeArchived = false) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['habits', user?.id] }),
   })
 
+  const update = useMutation({
+    mutationFn: async (input: {
+      id: string
+      name: string
+      habitType: HabitType
+      unit?: string | null
+      targetValue?: number | null
+    }) => {
+      const { error } = await supabase
+        .from('habits')
+        .update({
+          name: input.name,
+          habit_type: input.habitType,
+          unit: input.unit ?? null,
+          target_value: input.targetValue ?? null,
+        })
+        .eq('id', input.id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['habits', user?.id] }),
+  })
+
   const archive = useMutation({
     mutationFn: async (habitId: string) => {
       const { error } = await supabase.from('habits').update({ is_archived: true }).eq('id', habitId)
@@ -50,5 +72,5 @@ export function useHabits(includeArchived = false) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['habits', user?.id] }),
   })
 
-  return { ...query, create, archive }
+  return { ...query, create, update, archive }
 }
