@@ -1,10 +1,10 @@
-import { Settings } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { AddButton } from '../../components/ui/AddButton'
 import { DateNav } from '../../components/ui/DateNav'
 import { todayISO } from '../../utils/dates'
+import { AddHabitModal } from '../habits/AddHabitModal'
 import { HabitChecklist } from '../habits/HabitChecklist'
-import { ManageHabitsModal } from '../habits/ManageHabitsModal'
 import { useDayRollup } from './useDayRollup'
 import { useJournalEntry } from './useJournalEntry'
 
@@ -15,7 +15,7 @@ export function JournalPage() {
 
   const { data: entry, isLoading, save } = useJournalEntry(date)
   const { workouts, transactions } = useDayRollup(date)
-  const [manageHabitsOpen, setManageHabitsOpen] = useState(false)
+  const [addHabitOpen, setAddHabitOpen] = useState(false)
 
   return (
     <div className="space-y-6">
@@ -40,18 +40,12 @@ export function JournalPage() {
       <div className="rounded-lg border border-slate-200 bg-white p-4">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-800">Habits</h2>
-          <button
-            onClick={() => setManageHabitsOpen(true)}
-            className="text-slate-400 hover:text-slate-700"
-            aria-label="Manage habits"
-          >
-            <Settings className="h-4 w-4" />
-          </button>
+          <AddButton onClick={() => setAddHabitOpen(true)} label="Add habit" />
         </div>
         <HabitChecklist date={date} />
       </div>
 
-      {manageHabitsOpen && <ManageHabitsModal onClose={() => setManageHabitsOpen(false)} />}
+      {addHabitOpen && <AddHabitModal onClose={() => setAddHabitOpen(false)} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-slate-200 bg-white p-4">
