@@ -37,7 +37,11 @@ export function useHabitLogs(logDate: string) {
       if (error) throw error
       return data
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey })
+      // Streaks are computed from the full log history in a separate cached query.
+      queryClient.invalidateQueries({ queryKey: ['habit_streaks', user?.id] })
+    },
   })
 
   return { ...query, upsertLog }
