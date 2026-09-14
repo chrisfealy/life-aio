@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { AddButton } from '../../components/ui/AddButton'
+import { Modal } from '../../components/ui/Modal'
 import type { CategoryDirection } from '../../types/database.types'
 import { useCategories } from './useCategories'
 
 export function CategoryManager() {
   const { data: categories, create, update, archive } = useCategories()
+  const [modalOpen, setModalOpen] = useState(false)
   const [name, setName] = useState('')
   const [direction, setDirection] = useState<CategoryDirection>('expense')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -14,6 +17,8 @@ export function CategoryManager() {
     if (!name.trim()) return
     create.mutate({ name: name.trim(), direction })
     setName('')
+    setDirection('expense')
+    setModalOpen(false)
   }
 
   function startEdit(id: string, currentName: string, currentDirection: CategoryDirection) {
@@ -30,29 +35,9 @@ export function CategoryManager() {
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-800">Categories</h2>
-      <div className="mt-2 flex gap-2">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Groceries"
-          className="flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-        />
-        <select
-          value={direction}
-          onChange={(e) => setDirection(e.target.value as CategoryDirection)}
-          className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-        >
-          <option value="expense">Expense</option>
-          <option value="income">Income</option>
-          <option value="both">Both</option>
-        </select>
-        <button
-          onClick={handleCreate}
-          className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
-        >
-          Add
-        </button>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-slate-800">Categories</h2>
+        <AddButton onClick={() => setModalOpen(true)} label="Add category" />
       </div>
 
       <ul className="mt-3 space-y-1">
@@ -97,7 +82,43 @@ export function CategoryManager() {
             </li>
           ),
         )}
+        {(categories ?? []).length === 0 && <p className="text-sm text-slate-400">No categories yet — tap + to add one.</p>}
       </ul>
+
+      {modalOpen && (
+        <Modal title="Add category" onClose={() => setModalOpen(false)}>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Name</label>
+              <input
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Groceries"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Direction</label>
+              <select
+                value={direction}
+                onChange={(e) => setDirection(e.target.value as CategoryDirection)}
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              >
+                <option value="expense">Expense</option>
+                <option value="income">Income</option>
+                <option value="both">Both</option>
+              </select>
+            </div>
+            <button
+              onClick={handleCreate}
+              className="w-full rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+            >
+              Add category
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

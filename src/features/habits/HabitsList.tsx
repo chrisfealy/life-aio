@@ -1,22 +1,27 @@
+import { useState } from 'react'
+import { AddButton } from '../../components/ui/AddButton'
+import { Modal } from '../../components/ui/Modal'
 import { HabitForm } from './HabitForm'
 import { useHabits } from './useHabits'
 
 export function HabitsList() {
   const { data: habits, isLoading, create, archive } = useHabits()
+  const [modalOpen, setModalOpen] = useState(false)
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-slate-900">Habits</h1>
-        <p className="text-sm text-slate-500">Define the habits you want tracked on your daily journal page.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-semibold text-slate-900">Habits</h1>
+          <p className="text-sm text-slate-500">Define the habits you want tracked on your daily journal page.</p>
+        </div>
+        <AddButton onClick={() => setModalOpen(true)} label="Add habit" />
       </div>
-
-      <HabitForm onSubmit={(input) => create.mutate(input)} submitting={create.isPending} />
 
       {isLoading ? (
         <p className="text-sm text-slate-400">Loading…</p>
       ) : !habits || habits.length === 0 ? (
-        <p className="text-sm text-slate-400">No habits yet — add your first one above.</p>
+        <p className="text-sm text-slate-400">No habits yet — tap + to add your first one.</p>
       ) : (
         <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
           {habits.map((habit) => (
@@ -36,6 +41,18 @@ export function HabitsList() {
             </li>
           ))}
         </ul>
+      )}
+
+      {modalOpen && (
+        <Modal title="Add habit" onClose={() => setModalOpen(false)}>
+          <HabitForm
+            onSubmit={(input) => {
+              create.mutate(input)
+              setModalOpen(false)
+            }}
+            submitting={create.isPending}
+          />
+        </Modal>
       )}
     </div>
   )

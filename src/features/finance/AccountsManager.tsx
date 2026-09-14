@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { AddButton } from '../../components/ui/AddButton'
+import { Modal } from '../../components/ui/Modal'
 import type { AccountType } from '../../types/database.types'
 import { useAccountBalances, useAccounts } from './useAccounts'
 
@@ -18,6 +20,7 @@ export function AccountsManager() {
   const { data: accounts, create, update, archive } = useAccounts()
   const { data: balances } = useAccountBalances()
 
+  const [modalOpen, setModalOpen] = useState(false)
   const [name, setName] = useState('')
   const [accountType, setAccountType] = useState<AccountType>('checking')
   const [startingBalance, setStartingBalance] = useState('')
@@ -31,7 +34,9 @@ export function AccountsManager() {
     if (!name.trim()) return
     create.mutate({ name: name.trim(), accountType, startingBalance: Number(startingBalance) || 0 })
     setName('')
+    setAccountType('checking')
     setStartingBalance('')
+    setModalOpen(false)
   }
 
   function startEdit(id: string, currentName: string, currentType: AccountType, currentBalance: number) {
@@ -49,39 +54,9 @@ export function AccountsManager() {
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-800">Accounts</h2>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Chase Checking"
-          className="flex-1 min-w-[8rem] rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-        />
-        <select
-          value={accountType}
-          onChange={(e) => setAccountType(e.target.value as AccountType)}
-          className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-        >
-          {ACCOUNT_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-        <input
-          type="number"
-          step="0.01"
-          value={startingBalance}
-          onChange={(e) => setStartingBalance(e.target.value)}
-          placeholder="Starting balance"
-          className="w-32 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-        />
-        <button
-          onClick={handleCreate}
-          className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
-        >
-          Add
-        </button>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-slate-800">Accounts</h2>
+        <AddButton onClick={() => setModalOpen(true)} label="Add account" />
       </div>
 
       <ul className="mt-3 space-y-1">
@@ -147,8 +122,56 @@ export function AccountsManager() {
             </li>
           ),
         )}
-        {(accounts ?? []).length === 0 && <p className="text-sm text-slate-400">No accounts yet — add one above.</p>}
+        {(accounts ?? []).length === 0 && <p className="text-sm text-slate-400">No accounts yet — tap + to add one.</p>}
       </ul>
+
+      {modalOpen && (
+        <Modal title="Add account" onClose={() => setModalOpen(false)}>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Name</label>
+              <input
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Chase Checking"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Type</label>
+              <select
+                value={accountType}
+                onChange={(e) => setAccountType(e.target.value as AccountType)}
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              >
+                {ACCOUNT_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Starting balance</label>
+              <input
+                type="number"
+                step="0.01"
+                value={startingBalance}
+                onChange={(e) => setStartingBalance(e.target.value)}
+                placeholder="0.00"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <button
+              onClick={handleCreate}
+              className="w-full rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+            >
+              Add account
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
