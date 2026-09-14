@@ -6,6 +6,7 @@ import { AnalyticsDashboard } from './features/analytics/AnalyticsDashboard'
 import { FinancePage } from './features/finance/FinancePage'
 import { HabitsList } from './features/habits/HabitsList'
 import { JournalPage } from './features/journal/JournalPage'
+import { SettingsPage } from './features/settings/SettingsPage'
 import { WorkoutsHome } from './features/workouts/WorkoutsHome'
 import { WorkoutSessionPage } from './features/workouts/WorkoutSessionPage'
 import { todayISO } from './utils/dates'
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
           { path: 'workouts/:workoutId', element: <WorkoutSessionPage /> },
           { path: 'finance', element: <FinancePage /> },
           { path: 'analytics', element: <AnalyticsDashboard /> },
+          { path: 'settings', element: <SettingsPage /> },
         ],
       },
     ],

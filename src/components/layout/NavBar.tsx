@@ -1,7 +1,7 @@
-import { BarChart3, CheckSquare, Dumbbell, LogOut, NotebookPen, Wallet, type LucideIcon } from 'lucide-react'
+import { BarChart3, CheckSquare, Dumbbell, NotebookPen, Wallet, type LucideIcon } from 'lucide-react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { supabase } from '../../lib/supabaseClient'
 import { todayISO } from '../../utils/dates'
+import { ProfileMenu } from './ProfileMenu'
 
 type NavItem = { to: string; label: string; icon: LucideIcon; match: (pathname: string) => boolean }
 
@@ -23,8 +23,8 @@ export function NavBar() {
 
   return (
     <>
-      {/* Slim top bar: sign-out only, all screen sizes. Primary nav lives in the top bar on
-          larger screens and the bottom tab bar (thumb-reachable) on phones. */}
+      {/* Slim top bar: profile menu only. Primary nav lives in the top bar on larger screens
+          and the bottom tab bar (thumb-reachable) on phones. */}
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-2.5 sm:py-3">
           <nav className="hidden gap-1 sm:flex">
@@ -41,14 +41,9 @@ export function NavBar() {
               </NavLink>
             ))}
           </nav>
-          <button
-            onClick={() => supabase.auth.signOut()}
-            className="ml-auto flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
-            aria-label="Sign out"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Sign out</span>
-          </button>
+          <div className="ml-auto">
+            <ProfileMenu />
+          </div>
         </div>
       </header>
 
