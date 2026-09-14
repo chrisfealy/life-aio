@@ -1,42 +1,77 @@
-import { NavLink } from 'react-router-dom'
+import { BarChart3, CheckSquare, Dumbbell, LogOut, NotebookPen, Wallet, type LucideIcon } from 'lucide-react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { todayISO } from '../../utils/dates'
 
-const links = [
-  { to: '/', label: 'Journal', end: true },
-  { to: '/habits', label: 'Habits' },
-  { to: '/workouts', label: 'Workouts' },
-  { to: '/finance', label: 'Finance' },
-  { to: '/analytics', label: 'Analytics' },
-]
+type NavItem = { to: string; label: string; icon: LucideIcon; match: (pathname: string) => boolean }
+
+function getLinks(): NavItem[] {
+  return [
+    // Recomputed per render (not a module-level constant) so it still points at "today" if
+    // the app is left open across midnight.
+    { to: `/day/${todayISO()}`, label: 'Journal', icon: NotebookPen, match: (p) => p.startsWith('/day') },
+    { to: '/habits', label: 'Habits', icon: CheckSquare, match: (p) => p.startsWith('/habits') },
+    { to: '/workouts', label: 'Workouts', icon: Dumbbell, match: (p) => p.startsWith('/workouts') },
+    { to: '/finance', label: 'Finance', icon: Wallet, match: (p) => p.startsWith('/finance') },
+    { to: '/analytics', label: 'Analytics', icon: BarChart3, match: (p) => p.startsWith('/analytics') },
+  ]
+}
 
 export function NavBar() {
+  const { pathname } = useLocation()
+  const links = getLinks()
+
   return (
-    <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <span className="text-sm font-semibold text-slate-900">life-aio</span>
-        <nav className="flex gap-1">
-          {links.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.end}
-              className={({ isActive }) =>
-                `rounded-md px-3 py-1.5 text-sm font-medium ${
-                  isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-                }`
-              }
-            >
-              {link.label}
-            </NavLink>
-          ))}
-        </nav>
-        <button
-          onClick={() => supabase.auth.signOut()}
-          className="text-sm text-slate-500 hover:text-slate-900"
-        >
-          Sign out
-        </button>
-      </div>
-    </header>
+    <>
+      {/* Slim top bar: sign-out only, all screen sizes. Primary nav lives in the top bar on
+          larger screens and the bottom tab bar (thumb-reachable) on phones. */}
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-2.5 sm:py-3">
+          <nav className="hidden gap-1 sm:flex">
+            {links.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium ${
+                  link.match(pathname) ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <link.icon className="h-4 w-4" />
+                {link.label}
+              </NavLink>
+            ))}
+          </nav>
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="ml-auto flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+            aria-label="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Sign out</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Bottom tab bar: phones only. */}
+      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] sm:hidden">
+        <div className="mx-auto flex max-w-5xl">
+          {links.map((link) => {
+            const active = link.match(pathname)
+            return (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${
+                  active ? 'text-slate-900' : 'text-slate-400'
+                }`}
+              >
+                <link.icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+                {link.label}
+              </NavLink>
+            )
+          })}
+        </div>
+      </nav>
+    </>
   )
 }
