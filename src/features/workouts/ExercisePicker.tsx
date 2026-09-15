@@ -36,7 +36,7 @@ export function ExercisePicker({
   }
 
   return (
-    <div className="fixed inset-0 z-10 flex items-start justify-center bg-black/30 p-4 pt-16" onClick={onClose}>
+    <div className="fixed inset-0 z-30 flex items-start justify-center bg-black/30 p-4 pt-16" onClick={onClose}>
       <div
         className="max-h-[70vh] w-full max-w-md overflow-y-auto rounded-lg bg-white p-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
