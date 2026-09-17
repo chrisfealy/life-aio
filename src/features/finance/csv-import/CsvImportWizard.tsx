@@ -2,7 +2,6 @@ import { parse as parseDate, isValid } from 'date-fns'
 import Papa from 'papaparse'
 import { useMemo, useState } from 'react'
 import { format } from 'date-fns'
-import { useAccounts } from '../useAccounts'
 import { useCategories, useCategoryRules, suggestCategoryId } from '../useCategories'
 import { useTransactions, type TransactionInsert } from '../useTransactions'
 
@@ -33,12 +32,10 @@ export function CsvImportWizard({ onClose }: { onClose: () => void }) {
   const [amountCol, setAmountCol] = useState('')
   const [debitCol, setDebitCol] = useState('')
   const [creditCol, setCreditCol] = useState('')
-  const [accountId, setAccountId] = useState('')
 
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([])
 
   const { data: categories } = useCategories()
-  const { data: accounts } = useAccounts()
   const { data: rules } = useCategoryRules()
   const { data: existingTransactions } = useTransactions({ limit: 500 })
   const { importBatch } = useTransactions()
@@ -111,7 +108,7 @@ export function CsvImportWizard({ onClose }: { onClose: () => void }) {
   const includedCount = useMemo(() => parsedRows.filter((r) => r.include).length, [parsedRows])
 
   async function handleConfirm() {
-    const rows: Omit<TransactionInsert, 'user_id' | 'source' | 'import_batch_id' | 'account_id'>[] = parsedRows
+    const rows: Omit<TransactionInsert, 'user_id' | 'source' | 'import_batch_id'>[] = parsedRows
       .filter((r) => r.include && r.date && r.amount)
       .map((r) => ({
         txn_date: r.date as string,
@@ -123,14 +120,14 @@ export function CsvImportWizard({ onClose }: { onClose: () => void }) {
       }))
 
     if (rows.length === 0) return
-    await importBatch.mutateAsync({ filename, accountId: accountId || null, rows })
+    await importBatch.mutateAsync({ filename, rows })
     onClose()
   }
 
   return (
     <div className="fixed inset-0 z-10 flex items-start justify-center overflow-y-auto bg-black/30 p-4" onClick={onClose}>
       <div
-        className="my-8 w-full max-w-2xl rounded-lg bg-white p-5 shadow-xl"
+        className="my-8 w-full max-w-2xl rounded-lg bg-white p-4 shadow-xl sm:p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -157,7 +154,7 @@ export function CsvImportWizard({ onClose }: { onClose: () => void }) {
             <p className="text-sm text-slate-500">
               Map your bank's columns ({headers.length} columns detected in {filename}).
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Date column">
                 <Select value={dateCol} onChange={setDateCol} options={headers} />
               </Field>
@@ -177,20 +174,6 @@ export function CsvImportWizard({ onClose }: { onClose: () => void }) {
               <Field label="Description column">
                 <Select value={descCol} onChange={setDescCol} options={headers} />
               </Field>
-              <Field label="Account">
-                <select
-                  value={accountId}
-                  onChange={(e) => setAccountId(e.target.value)}
-                  className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                >
-                  <option value="">No account</option>
-                  {(accounts ?? []).map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
             </div>
 
             <label className="flex items-center gap-2 text-sm text-slate-600">
@@ -199,7 +182,7 @@ export function CsvImportWizard({ onClose }: { onClose: () => void }) {
             </label>
 
             {splitMode ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="Debit (money out) column">
                   <Select value={debitCol} onChange={setDebitCol} options={headers} />
                 </Field>
@@ -233,8 +216,8 @@ export function CsvImportWizard({ onClose }: { onClose: () => void }) {
             <p className="text-sm text-slate-500">
               {includedCount} of {parsedRows.length} rows will be imported. Duplicates are unchecked by default.
             </p>
-            <div className="mt-2 max-h-96 overflow-y-auto rounded-md border border-slate-200">
-              <table className="w-full text-xs">
+            <div className="mt-2 max-h-96 overflow-auto rounded-md border border-slate-200">
+              <table className="w-full min-w-[32rem] text-xs">
                 <thead className="sticky top-0 bg-slate-50">
                   <tr className="text-left text-slate-500">
                     <th className="p-2"></th>
