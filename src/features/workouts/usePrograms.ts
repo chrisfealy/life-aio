@@ -92,6 +92,22 @@ export function useProgramExercises(programId: string | null) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
   })
 
+  const updateExercise = useMutation({
+    mutationFn: async (input: {
+      id: string
+      warmupSets: number | null
+      targetSets: number | null
+      notes: string | null
+    }) => {
+      const { error } = await supabase
+        .from('workout_program_exercises')
+        .update({ warmup_sets: input.warmupSets, target_sets: input.targetSets, notes: input.notes })
+        .eq('id', input.id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+  })
+
   const removeExercise = useMutation({
     mutationFn: async (programExerciseId: string) => {
       const { error } = await supabase.from('workout_program_exercises').delete().eq('id', programExerciseId)
@@ -115,5 +131,5 @@ export function useProgramExercises(programId: string | null) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
   })
 
-  return { ...query, addExercise, removeExercise, reorder }
+  return { ...query, addExercise, updateExercise, removeExercise, reorder }
 }

@@ -28,6 +28,12 @@ export function ExerciseBlock({
   const nextSetNumber = sets.length + 1
   const prefillSet = lastSessionSets?.[Math.min(sets.length, (lastSessionSets?.length ?? 1) - 1)]
 
+  // Warm-up and working sets are numbered in their own separate sequences (W1, W2… / 1, 2…) so
+  // pre-filled warm-ups from a program plan read distinctly from the actual working sets.
+  let warmupCount = 0
+  let workCount = 0
+  const setLabels = sets.map((set) => (set.is_warmup ? `W${++warmupCount}` : `${++workCount}`))
+
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4">
       <div className="flex items-center justify-between">
@@ -61,9 +67,11 @@ export function ExerciseBlock({
             </tr>
           </thead>
           <tbody>
-            {sets.map((set, i) => (
+            {setLabels.map((label, i) => {
+              const set = sets[i]
+              return (
               <tr key={set.id} className="border-t border-slate-100">
-                <td className="py-1.5 text-slate-500">{i + 1}</td>
+                <td className="py-1.5 text-slate-500">{label}</td>
                 <td className="py-1.5">
                   <input
                     type="number"
@@ -101,7 +109,8 @@ export function ExerciseBlock({
                   </button>
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       )}

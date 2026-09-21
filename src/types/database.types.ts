@@ -139,6 +139,7 @@ export interface Database {
           target_sets: number | null
           target_reps: number | null
           target_weight: number | null
+          warmup_sets: number | null
           notes: string | null
         }
         Insert: {
@@ -150,6 +151,7 @@ export interface Database {
           target_sets?: number | null
           target_reps?: number | null
           target_weight?: number | null
+          warmup_sets?: number | null
           notes?: string | null
         }
         Update: Partial<Database['public']['Tables']['workout_program_exercises']['Insert']>

@@ -53,14 +53,20 @@ export function useStartWorkout() {
       // session's own planned_exercise_ids is the source of truth, so later swaps/removals/
       // additions never touch the shared program definition.
       let plannedExerciseIds: string[] = []
+      let plannedSets: { exerciseId: string; warmupSets: number; targetSets: number }[] = []
       if (input.programId) {
         const { data: programExercises, error: programExercisesError } = await supabase
           .from('workout_program_exercises')
-          .select('exercise_id')
+          .select('exercise_id, warmup_sets, target_sets')
           .eq('program_id', input.programId)
           .order('sort_order')
         if (programExercisesError) throw programExercisesError
         plannedExerciseIds = (programExercises ?? []).map((pe) => pe.exercise_id)
+        plannedSets = (programExercises ?? []).map((pe) => ({
+          exerciseId: pe.exercise_id,
+          warmupSets: pe.warmup_sets ?? 0,
+          targetSets: pe.target_sets ?? 0,
+        }))
       }
 
       const { data, error } = await supabase
@@ -76,6 +82,25 @@ export function useStartWorkout() {
         .select('*')
         .single()
       if (error) throw error
+
+      // Pre-fill empty warm-up + working set rows per the program's plan, so the session opens
+      // with the right number of sets to fill in instead of starting from zero.
+      const setRows = plannedSets.flatMap(({ exerciseId, warmupSets, targetSets }) => {
+        const rows: { user_id: string; workout_id: string; exercise_id: string; set_number: number; is_warmup: boolean }[] = []
+        let setNumber = 1
+        for (let i = 0; i < warmupSets; i++) {
+          rows.push({ user_id: user.id, workout_id: data.id, exercise_id: exerciseId, set_number: setNumber++, is_warmup: true })
+        }
+        for (let i = 0; i < targetSets; i++) {
+          rows.push({ user_id: user.id, workout_id: data.id, exercise_id: exerciseId, set_number: setNumber++, is_warmup: false })
+        }
+        return rows
+      })
+      if (setRows.length > 0) {
+        const { error: setsError } = await supabase.from('workout_sets').insert(setRows)
+        if (setsError) throw setsError
+      }
+
       return data
     },
     onSuccess: (workout) => {

@@ -4,16 +4,28 @@ import { DragHandle, SortableItem } from '../../components/ui/SortableItem'
 import { SortableList } from '../../components/ui/SortableList'
 import type { Database } from '../../types/database.types'
 import { ExercisePicker } from './ExercisePicker'
+import { ProgramExerciseModal } from './ProgramExerciseModal'
 import { useProgramExercises, usePrograms } from './usePrograms'
 
 type Exercise = Database['public']['Tables']['exercises']['Row']
 type Program = Database['public']['Tables']['workout_programs']['Row']
+type ProgramExercise = Database['public']['Tables']['workout_program_exercises']['Row'] & {
+  exercise: Exercise | null
+}
+
+function formatPlan(pe: { warmup_sets: number | null; target_sets: number | null }) {
+  const parts: string[] = []
+  if (pe.warmup_sets) parts.push(`${pe.warmup_sets} warm-up`)
+  if (pe.target_sets) parts.push(`${pe.target_sets} sets`)
+  return parts.join(' + ')
+}
 
 export function EditProgramModal({ program, onClose }: { program: Program; onClose: () => void }) {
   const { update, remove } = usePrograms()
   const { data: programExercises, addExercise, removeExercise, reorder } = useProgramExercises(program.id)
   const [name, setName] = useState(program.name)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [editingExercise, setEditingExercise] = useState<ProgramExercise | null>(null)
 
   function handleSaveName() {
     if (!name.trim() || name.trim() === program.name) return
@@ -56,10 +68,18 @@ export function EditProgramModal({ program, onClose }: { program: Program; onClo
                   <SortableItem key={pe.id} id={pe.id}>
                     {(drag) => (
                       <div className="flex items-center justify-between rounded-md bg-slate-50 px-2 py-1.5 text-sm text-slate-600">
-                        <span className="flex items-center gap-2">
+                        <span className="flex min-w-0 flex-1 items-center gap-2">
                           <DragHandle {...drag} />
-                          {(pe.exercise as unknown as Exercise | null)?.name ?? 'Exercise'}
-                          {pe.target_sets && pe.target_reps ? ` — ${pe.target_sets}x${pe.target_reps}` : ''}
+                          <button
+                            onClick={() => setEditingExercise(pe as ProgramExercise)}
+                            className="min-w-0 flex-1 truncate text-left hover:text-slate-900"
+                          >
+                            {(pe.exercise as unknown as Exercise | null)?.name ?? 'Exercise'}
+                            {formatPlan(pe) && <span className="ml-1 text-xs text-slate-400">— {formatPlan(pe)}</span>}
+                            {pe.notes && (
+                              <span className="ml-1 rounded bg-slate-200 px-1 text-[10px] text-slate-500">note</span>
+                            )}
+                          </button>
                         </span>
                         <button onClick={() => removeExercise.mutate(pe.id)} className="text-xs text-slate-300 hover:text-red-600">
                           ✕
@@ -85,6 +105,14 @@ export function EditProgramModal({ program, onClose }: { program: Program; onClo
           Delete program
         </button>
       </div>
+
+      {editingExercise && (
+        <ProgramExerciseModal
+          programId={program.id}
+          programExercise={editingExercise}
+          onClose={() => setEditingExercise(null)}
+        />
+      )}
     </Modal>
   )
 }
