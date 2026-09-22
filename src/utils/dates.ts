@@ -13,3 +13,8 @@ export function addDaysISO(dateISO: string, days: number): string {
   d.setDate(d.getDate() + days)
   return format(d, 'yyyy-MM-dd')
 }
+
+export function startOfMonthISO(dateISO: string): string {
+  const d = parseISO(dateISO)
+  return format(new Date(d.getFullYear(), d.getMonth(), 1), 'yyyy-MM-dd')
+}

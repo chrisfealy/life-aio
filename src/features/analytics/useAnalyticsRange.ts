@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { addDaysISO, todayISO } from '../../utils/dates'
+import { addDaysISO, startOfMonthISO, todayISO } from '../../utils/dates'
 
-export type RangePreset = 30 | 90 | 365
+export type RangePreset = 'mtd' | 30 | 90 | 365
 
-export function useAnalyticsRange(defaultPreset: RangePreset = 90) {
+export function useAnalyticsRange(defaultPreset: RangePreset = 'mtd') {
   const [preset, setPreset] = useState<RangePreset>(defaultPreset)
   const endDate = todayISO()
-  const startDate = addDaysISO(endDate, -preset)
+  const startDate = preset === 'mtd' ? startOfMonthISO(endDate) : addDaysISO(endDate, -preset)
   return { preset, setPreset, startDate, endDate }
 }

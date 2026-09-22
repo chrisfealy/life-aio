@@ -5,6 +5,7 @@ import { useAnalyticsRange, type RangePreset } from './useAnalyticsRange'
 import { WorkoutVolumeChart } from './WorkoutVolumeChart'
 
 const PRESETS: { value: RangePreset; label: string }[] = [
+  { value: 'mtd', label: 'Month to date' },
   { value: 30, label: 'Last 30 days' },
   { value: 90, label: 'Last 90 days' },
   { value: 365, label: 'Last year' },
@@ -19,7 +20,10 @@ export function AnalyticsDashboard() {
         <h1 className="text-lg font-semibold text-slate-900">Analytics</h1>
         <select
           value={preset}
-          onChange={(e) => setPreset(Number(e.target.value) as RangePreset)}
+          onChange={(e) => {
+            const raw = e.target.value
+            setPreset((raw === 'mtd' ? raw : Number(raw)) as RangePreset)
+          }}
           className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
         >
           {PRESETS.map((p) => (
